@@ -34,6 +34,25 @@ jobs:
           docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.tag.outputs.tag }}
           docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
 
+      - name: Update K8s manifests
+        run: |
+          git clone https://x-access-token:${{ secrets.K8S_REPO_TOKEN }}@github.com/devsyw/container-k8s.git
+          cd container-k8s
+          
+          # yq 설치 (없으면)
+          which yq || (sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_arm64 && sudo chmod +x /usr/local/bin/yq)
+          
+          yq e '.backend.image.tag = "${{ steps.tag.outputs.tag }}"' -i apps/container-platform/values.yaml
+          
+          # 변경 확인
+          cat apps/container-platform/values.yaml | grep -A 3 "backend:"
+          
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add .
+          git diff --staged --quiet || git commit -m "chore: update backend image to ${{ steps.tag.outputs.tag }}"
+          git push origin main
+
       - name: Output image info
         run: |
           echo "✅ Image pushed successfully!"
