@@ -84,6 +84,40 @@ public class KubernetesService {
         // 환경변수 파싱
         List<V1EnvVar> envVars = parseEnvVariables(envJson);
 
+        // 컨테이너 생성
+        V1Container container = new V1Container()
+                .name(name)
+                .image(image)
+                .ports(List.of(new V1ContainerPort().containerPort(port)))
+                .env(envVars)
+                .resources(new V1ResourceRequirements()
+                        .requests(Map.of(
+                                "memory", new io.kubernetes.client.custom.Quantity("256Mi"),
+                                "cpu", new io.kubernetes.client.custom.Quantity("100m")
+                        ))
+                        .limits(Map.of(
+                                "memory", new io.kubernetes.client.custom.Quantity("1Gi"),
+                                "cpu", new io.kubernetes.client.custom.Quantity("500m")
+                        ))
+                );
+
+        // 이미지별 인증 비활성화 설정
+        if (image.contains("code-server")) {
+            // code-server: 패스워드 비활성화
+            container.args(List.of("--auth", "none", "--bind-addr", "0.0.0.0:" + port));
+        } else if (image.contains("jupyter")) {
+            // Jupyter: 토큰 비활성화
+            container.args(List.of(
+                    "jupyter", "notebook",
+                    "--ip=0.0.0.0",
+                    "--port=" + port,
+                    "--no-browser",
+                    "--allow-root",
+                    "--NotebookApp.token=''",
+                    "--NotebookApp.password=''"
+            ));
+        }
+
         V1Deployment deployment = new V1Deployment()
                 .metadata(new V1ObjectMeta().name(name).namespace(namespace).labels(labels))
                 .spec(new V1DeploymentSpec()
@@ -92,23 +126,7 @@ public class KubernetesService {
                         .template(new V1PodTemplateSpec()
                                 .metadata(new V1ObjectMeta().labels(labels))
                                 .spec(new V1PodSpec()
-                                        .containers(List.of(
-                                                new V1Container()
-                                                        .name(name)
-                                                        .image(image)
-                                                        .ports(List.of(new V1ContainerPort().containerPort(port)))
-                                                        .env(envVars)
-                                                        .resources(new V1ResourceRequirements()
-                                                                .requests(Map.of(
-                                                                        "memory", new io.kubernetes.client.custom.Quantity("256Mi"),
-                                                                        "cpu", new io.kubernetes.client.custom.Quantity("100m")
-                                                                ))
-                                                                .limits(Map.of(
-                                                                        "memory", new io.kubernetes.client.custom.Quantity("1Gi"),
-                                                                        "cpu", new io.kubernetes.client.custom.Quantity("500m")
-                                                                ))
-                                                        )
-                                        ))
+                                        .containers(List.of(container))
                                 )
                         )
                 );
