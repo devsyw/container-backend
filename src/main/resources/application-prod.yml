@@ -1,0 +1,17 @@
+# 배포 환경 - K8s 연동 활성화
+kubernetes:
+  enabled: true
+  namespace: user-containers
+  registry: 192.168.2.2:32000
+  domain: 192.168.2.2.nip.io
+  ingress:
+    port: 30080
+
+spring:
+  h2:
+    console:
+      enabled: false
+
+logging:
+  level:
+    com.container.platform: INFO

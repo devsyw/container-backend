@@ -1,0 +1,7 @@
+# 로컬 개발 환경 - K8s 연동 비활성화
+kubernetes:
+  enabled: false
+
+logging:
+  level:
+    com.container.platform: DEBUG

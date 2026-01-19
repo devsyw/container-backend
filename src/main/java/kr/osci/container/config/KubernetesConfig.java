@@ -5,22 +5,19 @@ import io.kubernetes.client.openapi.apis.CoreV1Api;
 import io.kubernetes.client.openapi.apis.AppsV1Api;
 import io.kubernetes.client.openapi.apis.NetworkingV1Api;
 import io.kubernetes.client.util.Config;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import java.io.FileReader;
 import java.io.IOException;
 
 @Configuration
+@ConditionalOnProperty(name = "kubernetes.enabled", havingValue = "true")
 public class KubernetesConfig {
-
-    @Value("${kubernetes.config.path:#{null}}")
-    private String kubeConfigPath;
 
     @Bean
     public ApiClient apiClient() throws IOException {
-        // 클러스터 내부에서 자동으로 ServiceAccount 인증 사용
+        // 클러스터 내부에서 ServiceAccount 자동 인증 사용
         ApiClient client = Config.defaultClient();
         io.kubernetes.client.openapi.Configuration.setDefaultApiClient(client);
         return client;
