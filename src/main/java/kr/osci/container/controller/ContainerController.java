@@ -8,11 +8,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/containers")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "http://localhost:3000")
 public class ContainerController {
 
     private final ContainerService containerService;
@@ -49,5 +49,12 @@ public class ContainerController {
     public ResponseEntity<Void> stopInstance(@PathVariable Long instanceId) {
         containerService.stopInstance(instanceId);
         return ResponseEntity.ok().build();
+    }
+
+    // Pod 상태 확인 API (신규)
+    @GetMapping("/instances/{instanceId}/status")
+    public ResponseEntity<Map<String, String>> getInstanceStatus(@PathVariable Long instanceId) {
+        String status = containerService.getInstanceStatus(instanceId);
+        return ResponseEntity.ok(Map.of("status", status));
     }
 }

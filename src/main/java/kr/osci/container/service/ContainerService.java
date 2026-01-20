@@ -69,16 +69,19 @@ public class ContainerService {
         if (kubernetesEnabled && kubernetesService != null) {
             kubernetesService.createContainer(template, userId, podName, randomSuffix);
             log.info("Kubernetes Pod created: {}", podName);
+            instance.setStatus(ContainerInstance.ContainerStatus.PENDING);
         } else {
             log.info("Kubernetes disabled - Mock instance created: {}", podName);
+            instance.setStatus(ContainerInstance.ContainerStatus.RUNNING);
         }
 
-        instance.setStatus(ContainerInstance.ContainerStatus.RUNNING);
         return instanceRepository.save(instance);
     }
 
     public List<ContainerInstance> getUserInstances(String userId) {
-        return instanceRepository.findByUserId(userId);
+        // RUNNING 또는 PENDING 상태만 반환 (STOPPED 제외)
+        return instanceRepository.findByUserIdAndStatusIn(userId,
+                List.of(ContainerInstance.ContainerStatus.RUNNING, ContainerInstance.ContainerStatus.PENDING));
     }
 
     @Transactional
@@ -97,5 +100,30 @@ public class ContainerService {
         instance.setStatus(ContainerInstance.ContainerStatus.STOPPED);
         instance.setStoppedAt(LocalDateTime.now());
         instanceRepository.save(instance);
+    }
+
+    // Pod 상태 확인 (신규)
+    public String getInstanceStatus(Long instanceId) {
+        ContainerInstance instance = instanceRepository.findById(instanceId)
+                .orElseThrow(() -> new RuntimeException("Instance not found: " + instanceId));
+
+        if (kubernetesEnabled && kubernetesService != null) {
+            String podStatus = kubernetesService.getPodStatus(instance.getPodName());
+
+            // Pod 상태에 따라 Instance 상태 업데이트
+            if ("Running".equals(podStatus)) {
+                if (instance.getStatus() != ContainerInstance.ContainerStatus.RUNNING) {
+                    instance.setStatus(ContainerInstance.ContainerStatus.RUNNING);
+                    instanceRepository.save(instance);
+                }
+                return "READY";
+            } else if ("Pending".equals(podStatus)) {
+                return "PENDING";
+            } else {
+                return podStatus;
+            }
+        }
+
+        return instance.getStatus().name();
     }
 }
