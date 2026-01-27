@@ -7,6 +7,15 @@ kubernetes:
   ingress:
     port: 30080
 
+# 플랫폼 서비스 추가
+platform:
+  jupyterhub:
+    enabled: true
+    name: "JupyterHub"
+    description: "멀티유저 Jupyter 환경"
+    icon: "🪐"
+    subdomain: "jupyterhub"
+
 spring:
   h2:
     console:
