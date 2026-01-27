@@ -200,7 +200,7 @@ public class KubernetesService {
     }
 
     /**
-     * 컨테이너 삭제 (Deployment, Service, Ingress)
+     * 컨테이너 삭제 (Deployment/Service/Ingress)
      */
     public void deleteContainer(String podName) {
         try {
